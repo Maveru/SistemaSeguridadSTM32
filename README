@@ -1,0 +1,7 @@
+
+15/01/2022 - Se ha realizado un codigo que hace lo siguiente :
+  
+    Ultrasonidos detecta distancia
+    Zumbador suena si la alarma se dispara
+    Leds varian si la alarma está ON o no
+    Botones para introducir la contraseña y deshabilitar la alarma
