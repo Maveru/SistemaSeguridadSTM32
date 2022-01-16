@@ -71,6 +71,7 @@ volatile int aux=0;
 volatile int EscribirPass = 0;
 volatile  uint8_t value = 0;
 char password[4];
+int16_t adcval; 				// valor para el conversor analógico-digital
 
 void BuzAlarm (){
 
@@ -262,6 +263,14 @@ int main(void)
 
   	  HCSR04_Read();//LECTURA DEL ULTRASONIDOS
 
+  	//DAC:
+  	  HAL_ADC_Start(&hadc1);
+
+  	  if (HAL_ADC_PollForConversion(&hadc1, 100)==HAL_OK) {
+  	 	adcval=HAL_ADC_GetValue(&hadc1);
+  	  }
+  	  HAL_ADC_Stop(&hadc1);
+
  	  HAL_Delay(200);
  	 if (EscribirPass == 1){
  		 HAL_NVIC_DisableIRQ(EXTI0_IRQn);
@@ -270,7 +279,7 @@ int main(void)
 
 
  	 }
- 	 if (ALARMA == 1){
+ 	 if (ALARMA == 1 || adcval<50){
  		 HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6,1);
  		 HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7,0);
  		 htim2.Instance->CCR1 = 255;
@@ -346,7 +355,7 @@ static void MX_ADC1_Init(void)
   */
   hadc1.Instance = ADC1;
   hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV2;
-  hadc1.Init.Resolution = ADC_RESOLUTION_12B;
+  hadc1.Init.Resolution = ADC_RESOLUTION_8B;
   hadc1.Init.ScanConvMode = DISABLE;
   hadc1.Init.ContinuousConvMode = DISABLE;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
@@ -477,9 +486,9 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 692-1;
+  htim2.Init.Prescaler = 900-1;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 255-1;
+  htim2.Init.Period = 4294967295;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_PWM_Init(&htim2) != HAL_OK)
