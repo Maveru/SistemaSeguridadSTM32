@@ -61,8 +61,8 @@ all: main-build
 main-build: SistemaSeguridad.elf secondary-outputs
 
 # Tool invocations
-SistemaSeguridad.elf: $(OBJS) $(USER_OBJS) C:\Users\Propietario\Documents\GitHub\SistemaSeguridadSTM32\SistemaSeguridad\STM32F407VGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "SistemaSeguridad.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\Propietario\Documents\GitHub\SistemaSeguridadSTM32\SistemaSeguridad\STM32F407VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="SistemaSeguridad.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+SistemaSeguridad.elf: $(OBJS) $(USER_OBJS) C:\Users\Markv\Desktop\backups\ULTRA\ LEDS\ BOTON\ ZUMBA\ PASSWORD\SistemaSeguridad\STM32F407VGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "SistemaSeguridad.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\Markv\Desktop\backups\ULTRA LEDS BOTON ZUMBA PASSWORD\SistemaSeguridad\STM32F407VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="SistemaSeguridad.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

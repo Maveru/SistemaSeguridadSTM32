@@ -46,6 +46,7 @@ I2C_HandleTypeDef hi2c1;
 
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim2;
+TIM_HandleTypeDef htim3;
 
 /* USER CODE BEGIN PV */
 
@@ -58,6 +59,7 @@ static void MX_TIM1_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_TIM2_Init(void);
+static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
 //void BuzAlarm ();
 /* USER CODE END PFP */
@@ -71,24 +73,14 @@ volatile int aux=0;
 volatile int EscribirPass = 0;
 volatile  uint8_t value = 0;
 char password[4];
-int16_t adcval; 				// valor para el conversor analógico-digital
 
-void BuzAlarm (){
 
-	  while (value<255)
-		  {
-			  htim2.Instance->CCR1 = 255;  // vary the duty cycle
-			  HAL_Delay (500);  // wait for 500 ms
-			  htim2.Instance->CCR1 = 100;
-			  value -= 20;
-		  }
+uint32_t adcValue;
 
-		  value = 0;
-}
 
 void EscribePass(){
 	//HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_15);
-
+	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15,1);
 	//EscribirPass = 0;
 	if (HAL_GPIO_ReadPin (GPIOA, GPIO_PIN_1) == 1 ){
 
@@ -106,14 +98,20 @@ void EscribePass(){
 	if (aux == 4){
 		aux = 0;
 		if(password[0]=='1' && password[1]=='2' && password[2]=='2' && password[3]=='1'){
-			acceso = 1;
+			if (acceso == 1)
+				acceso = 0;
+			else
+				acceso = 1;
 			ALARMA = 0;
 			EscribirPass = 0;
+			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15,0);
 			return;
 		}
 		else{
 			acceso = 0;
+			ALARMA = 1;
 			EscribirPass = 0;
+			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15,0);
 		    return;
 		}
 	}
@@ -124,7 +122,7 @@ void EscribePass(){
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 
-	if (GPIO_Pin==GPIO_PIN_0 ){ //encendido y apagado de la alarma
+	if (GPIO_Pin==GPIO_PIN_0 ){
 		//HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_15);
 		//EscribePass();
 		EscribirPass = 1;
@@ -193,7 +191,6 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 			}
 		else {
 			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13,0);
-			ALARMA = 0;
 
 
 	}
@@ -246,10 +243,11 @@ int main(void)
   MX_I2C1_Init();
   MX_ADC1_Init();
   MX_TIM2_Init();
+  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
 
   HAL_TIM_IC_Start_IT(&htim1,TIM_CHANNEL_1);//empezamos en el modo de interrupcion
-  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -259,17 +257,16 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+	  HAL_ADC_Start(&hadc1);
 
+	       if (HAL_ADC_PollForConversion(&hadc1, 100) == HAL_OK){
+	  			  adcValue = HAL_ADC_GetValue(&hadc1); //valor leído
+	  			  if (adcValue < 25)
+	  				  ALARMA = 1;
+	       }
+	  		  HAL_ADC_Stop(&hadc1);
 
   	  HCSR04_Read();//LECTURA DEL ULTRASONIDOS
-
-  	//DAC:
-  	  HAL_ADC_Start(&hadc1);
-
-  	  if (HAL_ADC_PollForConversion(&hadc1, 100)==HAL_OK) {
-  	 	adcval=HAL_ADC_GetValue(&hadc1);
-  	  }
-  	  HAL_ADC_Stop(&hadc1);
 
  	  HAL_Delay(200);
  	 if (EscribirPass == 1){
@@ -279,17 +276,20 @@ int main(void)
 
 
  	 }
- 	 if (ALARMA == 1 || adcval<50){
+ 	 if (ALARMA == 1){
  		 HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6,1);
  		 HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7,0);
- 		 htim2.Instance->CCR1 = 255;
+ 		 htim3.Instance->CCR1 = 255;
  		 //BuzAlarm();
  	  }
  	 if (acceso == 1) {
- 		 htim2.Instance->CCR1 = 0;
+ 		 htim3.Instance->CCR1 = 0;
  		 HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6,0);
- 		 HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7,1);
+ 		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7,1);
+
+ 		 ALARMA = 0;
  	  }
+ 	 else HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7,0);
 
   }
   /* USER CODE END 3 */
@@ -371,7 +371,7 @@ static void MX_ADC1_Init(void)
   }
   /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
   */
-  sConfig.Channel = ADC_CHANNEL_3;
+  sConfig.Channel = ADC_CHANNEL_11;
   sConfig.Rank = 1;
   sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
@@ -517,6 +517,55 @@ static void MX_TIM2_Init(void)
 }
 
 /**
+  * @brief TIM3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM3_Init(void)
+{
+
+  /* USER CODE BEGIN TIM3_Init 0 */
+
+  /* USER CODE END TIM3_Init 0 */
+
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
+
+  /* USER CODE BEGIN TIM3_Init 1 */
+
+  /* USER CODE END TIM3_Init 1 */
+  htim3.Instance = TIM3;
+  htim3.Init.Prescaler = 0;
+  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim3.Init.Period = 65535;
+  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 0;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM3_Init 2 */
+
+  /* USER CODE END TIM3_Init 2 */
+  HAL_TIM_MspPostInit(&htim3);
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -527,10 +576,10 @@ static void MX_GPIO_Init(void)
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOH_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOE_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
-  __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
