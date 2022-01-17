@@ -6,3 +6,5 @@
     Leds varian si la alarma está ON o no
     Botones para introducir la contraseña y deshabilitar la alarma
     ldr que permite hacer saltar la alarma si la luminosidad cae por debajo de un umbral (un intruso la está tapando)
+
+17/01/2022 - Se han completado el codigo
